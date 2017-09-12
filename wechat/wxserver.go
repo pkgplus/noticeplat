@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	FMT_URL_JSCODE2SESSION = "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%d&grant_type=authorization_code"
+	FMT_URL_JSCODE2SESSION = "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code"
 )
 
 var (
@@ -64,7 +64,7 @@ func (s *SessionResp) Convert2Map() map[string]interface{} {
 	}
 }
 
-func Jscode2Session(jscode int) (sessResp *SessionResp, err error) {
+func Jscode2Session(jscode string) (sessResp *SessionResp, err error) {
 	req_url := fmt.Sprintf(FMT_URL_JSCODE2SESSION,
 		WxServer.AppId,
 		WxServer.Secret,
