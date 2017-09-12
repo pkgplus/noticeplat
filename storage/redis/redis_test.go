@@ -51,7 +51,7 @@ func TestRedisStorage(t *testing.T) {
 
 	// user plugin
 	up := &user.UserPlugin{
-		UnionID:  "xxxxxxxxxxx",
+		UserID:   "xxxxxxxxxxx",
 		PluginID: "1",
 		Setting: &user.UserPluginSetting{
 			CronSetting: &cron.Setting{
