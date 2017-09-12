@@ -49,8 +49,8 @@ func NewSessionResp(sessMap map[string]string) (*SessionResp, error) {
 	session_key := sessMap["session_key"]
 	unionid := sessMap["unionid"]
 
-	if openid == "" || session_key == "" || unionid == "" {
-		return nil, errors.New("openid/session_key/unionid must not null")
+	if openid == "" || session_key == "" {
+		return nil, errors.New("openid/session_key must not null")
 	}
 
 	return &SessionResp{openid, session_key, unionid}, nil

@@ -7,7 +7,7 @@ import (
 )
 
 type UserPlugin struct {
-	UnionID  string
+	UserID   string
 	PluginID string
 	Setting  *UserPluginSetting
 }

@@ -55,12 +55,13 @@ func init() {
 
 func (rs *RedisStorage) SaveSession(sess_3rd string, sessInfo *wechat.SessionResp) error {
 	ret := rs.HMSet(SESS_PREFIX+sess_3rd, sessInfo.Convert2Map())
-	if ret.Err() != nil {
-		return ret.Err()
-	}
+	// if ret.Err() != nil {
+	// 	return ret.Err()
+	// }
+	return ret.Err()
 
-	expRet := rs.ExpireAt(SESS_PREFIX+sess_3rd, time.Now().Add(SEVEN_DAY))
-	return expRet.Err()
+	// expRet := rs.ExpireAt(SESS_PREFIX+sess_3rd, time.Now().Add(SEVEN_DAY))
+	// return expRet.Err()
 }
 
 func (rs *RedisStorage) QuerySession(sess_3rd string) (*wechat.SessionResp, error) {
@@ -154,7 +155,7 @@ func (rs *RedisStorage) AddUserPlugin(up *user.UserPlugin) error {
 	}
 
 	// userplugins
-	ret := rs.HSet(USERPLUGINS_PREFIX+up.UnionID, up.PluginID, up.Setting.String())
+	ret := rs.HSet(USERPLUGINS_PREFIX+up.UserID, up.PluginID, up.Setting.String())
 	if ret.Err() != nil {
 		return ret.Err()
 	}
@@ -162,18 +163,18 @@ func (rs *RedisStorage) AddUserPlugin(up *user.UserPlugin) error {
 	// tasks
 	zret := rs.ZAdd(TASKS_SORTSET, redis.Z{
 		float64(runtime),
-		up.UnionID + ":" + up.PluginID,
+		up.UserID + ":" + up.PluginID,
 	})
 	return zret.Err()
 }
 
-func (rs *RedisStorage) DelUserPlugin(unionid, pluginid string) error {
-	ret := rs.HDel(USERPLUGINS_PREFIX+unionid, pluginid)
+func (rs *RedisStorage) DelUserPlugin(uid, pluginid string) error {
+	ret := rs.HDel(USERPLUGINS_PREFIX+uid, pluginid)
 	if ret.Err() != nil {
 		return ret.Err()
 	}
 
-	ret = rs.ZRem(TASKS_SORTSET, unionid+":"+pluginid)
+	ret = rs.ZRem(TASKS_SORTSET, uid+":"+pluginid)
 	return ret.Err()
 }
 
