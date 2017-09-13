@@ -71,10 +71,10 @@ func TestRedisStorage(t *testing.T) {
 
 	curtime := time.Now().Unix()
 	err = Client.FetchTasks(curtime,
-		func(ups *user.UserPluginSetting) error {
-			if ups.CronSetting.First != 1504850400 ||
-				ups.CronSetting.Intervals[0] != "@every 10s" ||
-				ups.PluginType != "HrSign" {
+		func(ups *user.UserPlugin) error {
+			if ups.Setting.CronSetting.First != 1504850400 ||
+				ups.Setting.CronSetting.Intervals[0] != "@every 10s" ||
+				ups.Setting.PluginType != "HrSign" {
 				t.Fatalf("get unkown user plugin setting:%s", ups.String())
 			} else {
 				sign := &hrsign.HrSignPlugin{HrUserID: "01462834"}

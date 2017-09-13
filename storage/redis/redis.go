@@ -148,14 +148,14 @@ func (rs *RedisStorage) ExpireEnergy(uid string) error {
 
 func (rs *RedisStorage) AddUserPlugin(up *user.UserPlugin) error {
 	// runtime
-	cronSetting := up.Setting.CronSetting
+	cronSetting := up.CronSetting
 	runtime := cronSetting.First
 	if runtime == 0 {
 		return errors.New(ERROR_USERTASK_EXPIRED.Error() + ":" + cronSetting.String())
 	}
 
 	// userplugins
-	ret := rs.HSet(USERPLUGINS_PREFIX+up.UserID, up.PluginID, up.Setting.String())
+	ret := rs.HSet(USERPLUGINS_PREFIX+up.UserID, up.PluginID, up.String())
 	if ret.Err() != nil {
 		return ret.Err()
 	}
@@ -178,7 +178,7 @@ func (rs *RedisStorage) DelUserPlugin(uid, pluginid string) error {
 	return ret.Err()
 }
 
-func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPluginSetting) error) error {
+func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin) error) error {
 	ret := rs.ZRangeWithScores(TASKS_SORTSET, 0, curtime)
 	retZs, err := ret.Result()
 	if err != nil {
@@ -200,13 +200,13 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPluginS
 		}
 
 		// log.Printf("pluginSetting:  %s\n", pluginSetting)
-		upsetting, err := user.NewUserPluginSetting([]byte(pluginSetting))
+		userPlugin, err := user.NewUserPlugin(uid_pid[0], uid_pid[1], []byte(pluginSetting))
 		if err != nil {
 			log.Printf("parse setting %s err:%s\n", setting_ret.String(), err)
 			continue
 		}
 
-		err = handler(upsetting)
+		err = handler(userPlugin)
 		if err != nil {
 			log.Printf("handle %s err:%v\n", setting_ret.String(), err)
 			continue

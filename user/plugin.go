@@ -9,14 +9,28 @@ import (
 type UserPlugin struct {
 	UserID   string
 	PluginID string
-	Setting  *UserPluginSetting
+	*UserPluginSetting
 }
 
 type UserPluginSetting struct {
 	CronSetting *cron.Setting
 
 	Parameters map[string]string
+	Values     []string
 	PluginType string
+}
+
+func NewUserPlugin(uid, pluginid string, setting []byte) (*UserPlugin, error) {
+	ups, err := NewUserPluginSetting(setting)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserPlugin{
+		UserID:            uid,
+		PluginID:          pluginid,
+		UserPluginSetting: ups,
+	}, nil
 }
 
 func NewUserPluginSetting(data []byte) (usetting *UserPluginSetting, err error) {
@@ -26,6 +40,10 @@ func NewUserPluginSetting(data []byte) (usetting *UserPluginSetting, err error) 
 		return nil, err
 	}
 	return
+}
+
+func (ups *UserPluginSetting) Param(key string) string {
+	return ups.Parameters[key]
 }
 
 func (ups *UserPluginSetting) String() string {

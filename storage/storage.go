@@ -18,5 +18,5 @@ type Storage interface {
 
 	AddUserPlugin(up *user.UserPlugin) error
 	DelUserPlugin(unionid, pluginid string) error
-	FetchTasks(curtime int64, handler func(*user.UserPluginSetting) error) error
+	FetchTasks(curtime int64, handler func(*user.UserPlugin) error) error
 }

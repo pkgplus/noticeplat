@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/bingbaba/hhsecret/web"
+	"github.com/xuebing1110/noticeplat/plugin"
 	"github.com/xuebing1110/noticeplat/user"
 )
 
@@ -21,43 +21,54 @@ var (
 	ERR_NOTICE_CHECK = errors.New("CheckNoticeFailed")
 )
 
-type HrSignPlugin struct {
-	HrUserID string
+func init() {
+	err := plugin.Registe(PLUGIN_TYPE_HRSIGN, new(HrSignPlugin))
+	if err != nil {
+		panic(err)
+	}
 }
+
+type HrSignPlugin struct{}
 
 func (hs *HrSignPlugin) GetType() string {
 	return PLUGIN_TYPE_HRSIGN
 }
-func (hs *HrSignPlugin) Execute(ups *user.UserPluginSetting) error {
-	real_url := fmt.Sprintf(FMT_HRSIGN_NOTICECHECK_URL, hs.HrUserID)
+func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
+	hrUid := up.Param("UserID")
+	if hrUid == "" {
+		return false, errors.New("no UserID in parameters")
+	}
+
+	real_url := fmt.Sprintf(FMT_HRSIGN_NOTICECHECK_URL, hrUid)
 	resp, err := http.DefaultClient.Get(real_url)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	notice_resp := new(web.Response)
 	err = json.Unmarshal(data, notice_resp)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	flag, ok := notice_resp.Data.(bool)
 	if !ok {
-		return ERR_NOTICE_CHECK
+		return false, ERR_NOTICE_CHECK
 	}
 
-	if flag {
-		log.Printf("should send a notice: %s!", ups.String())
-	} else {
-		log.Printf("can't send notice: %s!", ups.String())
-	}
-	return nil
+	// if flag {
+	// 	return true
+	// 	log.Printf("should send a notice: %s!", ups.String())
+	// } else {
+	// 	log.Printf("can't send notice: %s!", ups.String())
+	// }
+	return flag, nil
 }
 func (hs *HrSignPlugin) GetTemplateMsgID() string {
 	return "8U98v1g7PWLZ5p4jbWNSpY5dr-hhG5kVuMAUew4PHnY"
