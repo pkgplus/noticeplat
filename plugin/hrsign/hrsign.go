@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
+	"github.com/bingbaba/hhsecret"
 	"github.com/bingbaba/hhsecret/web"
 	"github.com/xuebing1110/noticeplat/plugin"
 	"github.com/xuebing1110/noticeplat/user"
+	"github.com/xuebing1110/noticeplat/wechat"
 )
 
 const (
 	PLUGIN_TYPE_HRSIGN         = "HrSign"
 	FMT_HRSIGN_NOTICECHECK_URL = "https://m.bingbaba.com/api/user/%s/notice"
+	FMT_HRSIGN_SIGNLIST_URL    = "https://m.bingbaba.com/api/user/%s/sign"
 )
 
 var (
@@ -40,7 +44,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 	}
 
 	real_url := fmt.Sprintf(FMT_HRSIGN_NOTICECHECK_URL, hrUid)
-	resp, err := http.DefaultClient.Get(real_url)
+	resp, err := http.Get(real_url)
 	if err != nil {
 		return false, err
 	}
@@ -60,6 +64,50 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 	flag, ok := notice_resp.Data.(bool)
 	if !ok {
 		return false, ERR_NOTICE_CHECK
+	}
+
+	// 消息内容
+	if flag {
+		resp, err = http.Get(fmt.Sprintf(FMT_HRSIGN_SIGNLIST_URL, hrUid))
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false, err
+		}
+
+		lsResp := new(hhsecret.ListSignResp)
+		err = json.Unmarshal(data, lsResp)
+		if err != nil {
+			return false, err
+		}
+
+		var location = "未打卡"
+		var signTime = "00:00"
+		var tip = up.Param("tip")
+		if len(lsResp.Data.Signs) > 0 {
+			location = lsResp.Data.Signs[0].Location
+			signTime = time.Unix(lsResp.Data.Signs[0].DateTime/1000, 0).Format("15:04")
+
+			if tip == "" {
+				tip = "下班打卡"
+			}
+		} else {
+			if tip == "" {
+				tip = "上班打卡"
+			}
+		}
+
+		up.Values = []string{
+			up.Param("name"),
+			"微信打卡",
+			location,
+			signTime,
+			tip,
+		}
 	}
 
 	// if flag {

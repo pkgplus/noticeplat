@@ -14,7 +14,7 @@ func TestSendMsg(t *testing.T) {
 		openid, tempid, formid,
 		[]string{"薛冰", "上班", "海尔大学", "08:43", "下班打卡"},
 	)
-	msg.SetEmphasis(5)
+	msg.SetEmphasis("5")
 	err := SendMsg(msg)
 	if err != nil {
 		t.Fatal(err)

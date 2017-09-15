@@ -42,6 +42,6 @@ func NewTemplateMsg(userid, templateid, formid string, values []string) *Templat
 	return msg
 }
 
-func (tmsg *TemplateMsg) SetEmphasis(i int) {
-	tmsg.EmphasisKeyword = fmt.Sprintf("keyword%d.DATA", i)
+func (tmsg *TemplateMsg) SetEmphasis(i string) {
+	tmsg.EmphasisKeyword = fmt.Sprintf("keyword%s.DATA", i)
 }
