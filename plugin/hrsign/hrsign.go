@@ -12,7 +12,6 @@ import (
 	"github.com/bingbaba/hhsecret/web"
 	"github.com/xuebing1110/noticeplat/plugin"
 	"github.com/xuebing1110/noticeplat/user"
-	"github.com/xuebing1110/noticeplat/wechat"
 )
 
 const (
