@@ -66,7 +66,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 	}
 
 	// 消息内容
-	flag = true
+	// flag = true
 	if flag {
 		resp, err = http.Get(fmt.Sprintf(FMT_HRSIGN_SIGNLIST_URL, hrUid))
 		if err != nil {
