@@ -30,6 +30,7 @@ func init() {
 }
 
 func SendMsg(t *TemplateMsg) error {
+	// log.Println("prepare send message...")
 	wxErr := WxServer.SendMsg(t)
 	if wxErr.Error() != nil {
 		log.Println(wxErr.ErrMsg)

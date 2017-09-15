@@ -10,7 +10,7 @@ import (
 
 const every = "@every "
 
-type Setting struct {
+type CronSetting struct {
 	// Clock     string // HH:mm
 	First     int64
 	Intervals []string // @every 1h | 100d
@@ -18,8 +18,8 @@ type Setting struct {
 	firsttime time.Time
 }
 
-func NewSetting(setting_bytes []byte) (s *Setting, err error) {
-	s = new(Setting)
+func NewSetting(setting_bytes []byte) (s *CronSetting, err error) {
+	s = new(CronSetting)
 	err = json.Unmarshal(setting_bytes, s)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func NewSetting(setting_bytes []byte) (s *Setting, err error) {
 	return
 }
 
-func (s *Setting) getMinInterval() (minDuration time.Duration, err error) {
+func (s *CronSetting) getMinInterval() (minDuration time.Duration, err error) {
 	for i, interval := range s.Intervals {
 		if strings.HasPrefix(interval, every) {
 			duration_desc := interval[len(every):]
@@ -76,7 +76,7 @@ func (s *Setting) getMinInterval() (minDuration time.Duration, err error) {
 	return
 }
 
-func (s *Setting) NextRunTime(curtime time.Time) (next_run time.Time) {
+func (s *CronSetting) NextRunTime(curtime time.Time) (next_run time.Time) {
 	if s.firsttime.IsZero() {
 		s.firsttime = time.Unix(s.First, 0)
 	}
@@ -122,7 +122,7 @@ func (s *Setting) NextRunTime(curtime time.Time) (next_run time.Time) {
 	return
 }
 
-func (s *Setting) String() string {
+func (s *CronSetting) String() string {
 	bytes, _ := json.Marshal(s)
 	return string(bytes)
 }

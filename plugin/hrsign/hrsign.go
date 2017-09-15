@@ -66,6 +66,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 	}
 
 	// 消息内容
+	flag = true
 	if flag {
 		resp, err = http.Get(fmt.Sprintf(FMT_HRSIGN_SIGNLIST_URL, hrUid))
 		if err != nil {
@@ -107,6 +108,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 			signTime,
 			tip,
 		}
+		up.Parameters["emphasis"] = "5"
 	}
 
 	// if flag {
@@ -119,4 +121,8 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 }
 func (hs *HrSignPlugin) GetTemplateMsgID() string {
 	return "8U98v1g7PWLZ5p4jbWNSpY5dr-hhG5kVuMAUew4PHnY"
+}
+
+func (hs *HrSignPlugin) GetEmphasisID() string {
+	return "5"
 }

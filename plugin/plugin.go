@@ -26,6 +26,7 @@ type Plugin interface {
 	GetType() string
 	Execute(*user.UserPlugin) (bool, error)
 	GetTemplateMsgID() string
+	GetEmphasisID() string
 }
 
 func Registe(plugintype string, plugin Plugin) error {

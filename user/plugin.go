@@ -13,7 +13,7 @@ type UserPlugin struct {
 }
 
 type UserPluginSetting struct {
-	CronSetting *cron.Setting
+	CronSetting *cron.CronSetting
 
 	Parameters map[string]string
 	Values     []string

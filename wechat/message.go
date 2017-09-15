@@ -2,8 +2,7 @@ package wechat
 
 import (
 	"fmt"
-
-	"encoding/json"
+	// "encoding/json"
 )
 
 type TemplateMsg struct {
@@ -36,8 +35,8 @@ func NewTemplateMsg(userid, templateid, formid string, values []string) *Templat
 		Data:       NewTemplateMsgData(values),
 	}
 
-	data, _ := json.Marshal(msg)
-	fmt.Printf("%s\n", data)
+	// data, _ := json.Marshal(msg)
+	// fmt.Printf("%s\n", data)
 
 	return msg
 }

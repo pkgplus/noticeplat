@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-redis/redis"
 	// "github.com/xuebing1110/noticeplat/plugin"
-	"github.com/xuebing1110/noticeplat/plugin/cron"
+	// "github.com/xuebing1110/noticeplat/plugin/cron"
 	"github.com/xuebing1110/noticeplat/user"
 	"github.com/xuebing1110/noticeplat/wechat"
 )
@@ -190,12 +190,18 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 		setting_ret := rs.HGet(USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1])
 		if setting_ret.Err() != nil {
 			log.Printf("hget %s %s err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
+			if setting_ret.Err() == redis.Nil {
+				rs.ZRem(TASKS_SORTSET, redis.Z{Member: uid_pid})
+			}
 			continue
 		}
 
 		pluginSetting, err := setting_ret.Result()
 		if err != nil {
 			log.Printf("hget %s %s result err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
+			if setting_ret.Err() == redis.Nil {
+				rs.ZRem(TASKS_SORTSET, redis.Z{Member: uid_pid})
+			}
 			continue
 		}
 
@@ -203,18 +209,24 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 		userPlugin, err := user.NewUserPlugin(uid_pid[0], uid_pid[1], []byte(pluginSetting))
 		if err != nil {
 			log.Printf("parse setting %s err:%s\n", setting_ret.String(), err)
+			if setting_ret.Err() == redis.Nil {
+				rs.ZRem(TASKS_SORTSET, redis.Z{Member: uid_pid})
+			}
 			continue
 		}
 
 		err = handler(userPlugin)
 		if err != nil {
-			log.Printf("handle %s err:%v\n", setting_ret.String(), err)
+			if err != redis.Nil {
+				log.Printf("handle %s err:%v\n", setting_ret.String(), err)
+			}
 			continue
 		}
 
-		next_runtime := cron.GetNextRunTime(setting_ret.String())
+		var next_runtime = userPlugin.CronSetting.NextRunTime(time.Unix(curtime, 0))
+		log.Println(next_runtime.Unix())
 		rs.ZAdd(TASKS_SORTSET, redis.Z{
-			float64(next_runtime),
+			float64(next_runtime.Unix()),
 			uid_pid,
 		})
 
