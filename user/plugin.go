@@ -15,10 +15,17 @@ type UserPlugin struct {
 type UserPluginSetting struct {
 	CronSetting *cron.CronSetting
 
-	Parameters map[string]string
+	Parameters map[string][]string
 	Values     []string
 	PluginType string
 }
+
+// type Parameter struct {
+// 	Label     string `json:"label,omitempty"`
+// 	LabelDesc string `json:"labelDesc,omitempty"`
+// 	Value     string `json:"value,omitempty"`
+// 	ValueDesc string `json:"valueDesc,omitempty"`
+// }
 
 func NewUserPlugin(uid, pluginid string, setting []byte) (*UserPlugin, error) {
 	ups, err := NewUserPluginSetting(setting)
@@ -39,11 +46,13 @@ func NewUserPluginSetting(data []byte) (usetting *UserPluginSetting, err error) 
 	if err != nil {
 		return nil, err
 	}
+
+	err = usetting.CronSetting.Init()
 	return
 }
 
 func (ups *UserPluginSetting) Param(key string) string {
-	return ups.Parameters[key]
+	return ups.Parameters[key][0]
 }
 
 func (ups *UserPluginSetting) String() string {

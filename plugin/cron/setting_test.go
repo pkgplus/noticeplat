@@ -11,33 +11,39 @@ func TestNextRunTime(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cur := time.Unix(1504850401, 0)
+	// cur := time.Now().Truncate(time.Minute)
+	cur := time.Unix(1505552769, 0).Truncate(time.Minute)
 	next := s.NextRunTime(cur).Unix()
-	if next != 1504854000 {
-		t.Fatalf("expect 1504850760 but get %d", next)
+	if next != cur.Add(time.Minute).Unix() {
+		t.Fatalf("expect %d but get %d", cur.Add(time.Minute).Unix(), next)
 	}
 
-	s, err = newTestSetting_workDay()
-	next = s.NextRunTime(cur).Unix()
-	if next != 1505109600 {
-		t.Fatalf("expect 1505109600 but get %d", next)
+	s2, err := newTestSetting_workDay()
+	if err != nil {
+		t.Fatal(err)
+	}
+	next = s2.NextRunTime(cur).Unix()
+	if next != 1505692800 {
+		t.Fatalf("expect 1505692800 but get %d", next)
 	}
 }
 
-func newTestSetting() (*Setting, error) {
+func newTestSetting() (*CronSetting, error) {
 	return NewSetting([]byte(`
 {
-"first":1504850400,
-"Intervals": ["@every 1h"]
+"firstTimeStr":"20170916103000",
+"interval": "1m"
 }
 `))
 }
 
-func newTestSetting_workDay() (*Setting, error) {
+func newTestSetting_workDay() (*CronSetting, error) {
 	return NewSetting([]byte(`
 {
-"first":1504850400,
-"Intervals": ["@every workday"]
+"interval": "1m",
+"weekLimit":"weekday",
+"clockLimitStart":"08:00",
+"clockLimitEnd":"12:00"
 }
 `))
 }

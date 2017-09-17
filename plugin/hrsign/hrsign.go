@@ -66,7 +66,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 	}
 
 	// 消息内容
-	// flag = true
+	flag = true
 	if flag {
 		resp, err = http.Get(fmt.Sprintf(FMT_HRSIGN_SIGNLIST_URL, hrUid))
 		if err != nil {
@@ -86,7 +86,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 		}
 
 		var location = "未打卡"
-		var signTime = "00:00"
+		var signTime = "--"
 		var tip = up.Param("tip")
 		if len(lsResp.Data.Signs) > 0 {
 			location = lsResp.Data.Signs[0].Location
@@ -108,7 +108,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 			signTime,
 			tip,
 		}
-		up.Parameters["emphasis"] = "5"
+		up.Parameters["emphasis"] = []string{"5", "放大关键词", ""}
 	}
 
 	// if flag {

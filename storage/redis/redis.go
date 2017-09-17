@@ -146,11 +146,31 @@ func (rs *RedisStorage) ExpireEnergy(uid string) error {
 	return ret.Err()
 }
 
+func (rs *RedisStorage) ListUserPlugins(uid string) (ups []*user.UserPlugin, err error) {
+	// userplugins
+	ret := rs.HGetAll(USERPLUGINS_PREFIX + uid)
+	if ret.Err() != nil {
+		return ups, ret.Err()
+	}
+
+	ups = make([]*user.UserPlugin, 0, len(ret.Val()))
+	for pluginid, up_bytes := range ret.Val() {
+		up, err := user.NewUserPlugin(uid, pluginid, []byte(up_bytes))
+		if err != nil {
+			log.Printf("parse userPlugin failed err:%v, body:%s", err, up_bytes)
+		} else {
+			ups = append(ups, up)
+		}
+	}
+
+	return ups, nil
+}
+
 func (rs *RedisStorage) AddUserPlugin(up *user.UserPlugin) error {
 	// runtime
 	cronSetting := up.CronSetting
-	runtime := cronSetting.First
-	if runtime == 0 {
+	runtime := cronSetting.NextRunTime(time.Now().Truncate(time.Minute))
+	if runtime.IsZero() {
 		return errors.New(ERROR_USERTASK_EXPIRED.Error() + ":" + cronSetting.String())
 	}
 
@@ -162,7 +182,7 @@ func (rs *RedisStorage) AddUserPlugin(up *user.UserPlugin) error {
 
 	// tasks
 	zret := rs.ZAdd(TASKS_SORTSET, redis.Z{
-		float64(runtime),
+		float64(runtime.Unix()),
 		up.UserID + ":" + up.PluginID,
 	})
 	return zret.Err()
@@ -179,11 +199,12 @@ func (rs *RedisStorage) DelUserPlugin(uid, pluginid string) error {
 }
 
 func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin) error) error {
+	// log.Printf("prepare to get task: 0-%d", curtime)
 	ret := rs.ZRevRangeByScoreWithScores(
 		TASKS_SORTSET,
 		redis.ZRangeBy{
 			Min: "0",
-			Max: "curtime",
+			Max: fmt.Sprintf("%d", curtime),
 		})
 	retZs, err := ret.Result()
 	if err != nil {
@@ -191,12 +212,16 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 	}
 
 	for _, retZ := range retZs {
-		uid_pid := strings.SplitN(retZ.Member.(string), ":", 2)
+		// log.Printf("get task:%+v", retZ.Member)
+
+		uid_pid_str := retZ.Member.(string)
+		uid_pid := strings.SplitN(uid_pid_str, ":", 2)
 		setting_ret := rs.HGet(USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1])
 		if setting_ret.Err() != nil {
 			log.Printf("hget %s %s err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
 			if setting_ret.Err() == redis.Nil {
-				rs.ZRem(TASKS_SORTSET, redis.Z{Member: uid_pid})
+				ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
+				log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid, ret2.Err())
 			}
 			continue
 		}
@@ -205,7 +230,8 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 		if err != nil {
 			log.Printf("hget %s %s result err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
 			if setting_ret.Err() == redis.Nil {
-				rs.ZRem(TASKS_SORTSET, redis.Z{Member: uid_pid})
+				ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
+				log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid[1], ret2.Err())
 			}
 			continue
 		}
@@ -215,7 +241,8 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 		if err != nil {
 			log.Printf("parse setting %s err:%s\n", setting_ret.String(), err)
 			if setting_ret.Err() == redis.Nil {
-				rs.ZRem(TASKS_SORTSET, redis.Z{Member: uid_pid})
+				ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
+				log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid, ret2.Err())
 			}
 			continue
 		}
@@ -229,10 +256,10 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 		}
 
 		var next_runtime = userPlugin.CronSetting.NextRunTime(time.Unix(curtime, 0))
-		log.Println(next_runtime.Unix())
+		// log.Printf("curtime:%s,next_runtime:%s", time.Unix(curtime, 0).String(), next_runtime.String())
 		rs.ZAdd(TASKS_SORTSET, redis.Z{
 			float64(next_runtime.Unix()),
-			uid_pid,
+			uid_pid_str,
 		})
 
 	}

@@ -16,7 +16,8 @@ type Storage interface {
 	GetEnergyCount(uid string) int64
 	PopEnergy(uid string) (string, error)
 
+	ListUserPlugins(uid string) ([]*user.UserPlugin, error)
 	AddUserPlugin(up *user.UserPlugin) error
-	DelUserPlugin(unionid, pluginid string) error
+	DelUserPlugin(uid, pluginid string) error
 	FetchTasks(curtime int64, handler func(*user.UserPlugin) error) error
 }
