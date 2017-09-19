@@ -126,3 +126,7 @@ func (hs *HrSignPlugin) GetTemplateMsgID() string {
 func (hs *HrSignPlugin) GetEmphasisID() string {
 	return "5"
 }
+
+func (hs *HrSignPlugin) GetPage() string {
+	return "hrsign"
+}

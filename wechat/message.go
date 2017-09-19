@@ -9,6 +9,7 @@ type TemplateMsg struct {
 	ToUserID        string                          `json:"touser"`
 	TemplateID      string                          `json:"template_id"`
 	FormID          string                          `json:"form_id"`
+	Page            string                          `json:"page,omitempty"`
 	Data            map[string]TemplateMsgDataValue `json:"data"`
 	EmphasisKeyword string                          `json:"emphasis_keyword,omitempty"`
 }
@@ -43,4 +44,7 @@ func NewTemplateMsg(userid, templateid, formid string, values []string) *Templat
 
 func (tmsg *TemplateMsg) SetEmphasis(i string) {
 	tmsg.EmphasisKeyword = fmt.Sprintf("keyword%s.DATA", i)
+}
+func (tmsg *TemplateMsg) SetPage(page string) {
+	tmsg.Page = page
 }
