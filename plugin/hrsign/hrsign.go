@@ -128,5 +128,5 @@ func (hs *HrSignPlugin) GetEmphasisID() string {
 }
 
 func (hs *HrSignPlugin) GetPage() string {
-	return "hrsign"
+	return "/pages/hrsign/hrsign"
 }
