@@ -204,7 +204,7 @@ func (rs *RedisStorage) GetUserPlugin(uid, pluginid string) (*user.UserPlugin, e
 		return nil, ret.Err()
 	}
 
-	return user.NewUserPlugin(uid, pluginid, []byte(ret.String()))
+	return user.NewUserPlugin(uid, pluginid, []byte(ret.Val()))
 }
 
 func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin) error) error {
