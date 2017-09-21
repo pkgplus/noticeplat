@@ -19,5 +19,7 @@ type Storage interface {
 	ListUserPlugins(uid string) ([]*user.UserPlugin, error)
 	AddUserPlugin(up *user.UserPlugin) error
 	DelUserPlugin(uid, pluginid string) error
+	GetUserPlugin(uid, pluginid string) (*user.UserPlugin, error)
+
 	FetchTasks(curtime int64, handler func(*user.UserPlugin) error) error
 }

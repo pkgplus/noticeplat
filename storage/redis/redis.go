@@ -198,6 +198,15 @@ func (rs *RedisStorage) DelUserPlugin(uid, pluginid string) error {
 	return ret.Err()
 }
 
+func (rs *RedisStorage) GetUserPlugin(uid, pluginid string) (*user.UserPlugin, error) {
+	ret := rs.HGet(USERPLUGINS_PREFIX+uid, pluginid)
+	if ret.Err() != nil {
+		return nil, ret.Err()
+	}
+
+	return user.NewUserPlugin(uid, pluginid, []byte(ret.String()))
+}
+
 func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin) error) error {
 	// log.Printf("prepare to get task: 0-%d", curtime)
 	ret := rs.ZRevRangeByScoreWithScores(
