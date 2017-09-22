@@ -108,7 +108,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 			signTime,
 			tip,
 		}
-		up.Parameters["emphasis"] = []string{"5", "放大关键词", ""}
+		up.Parameters["emphasis"] = "5"
 	}
 
 	// if flag {

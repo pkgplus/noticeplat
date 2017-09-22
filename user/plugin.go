@@ -17,11 +17,11 @@ type UserPluginSetting struct {
 	Desc        string            `json:"desc"`
 	CronSetting *cron.CronSetting `json:"cronSetting"`
 
-	Parameters map[string][]string `json:"parameters"`
-	Values     []string            `json:"values"`
-	PluginType string              `json:"pluginType"`
-	CreateTime int64               `json:"createTime"`
-	Disable    bool                `json:"disable"`
+	Parameters map[string]string `json:"parameters"`
+	Values     []string          `json:"values"`
+	PluginType string            `json:"pluginType"`
+	CreateTime int64             `json:"createTime"`
+	Disable    bool              `json:"disable"`
 }
 
 // type Parameter struct {
@@ -62,7 +62,7 @@ func NewUserPluginSetting(data []byte) (usetting *UserPluginSetting, err error) 
 func (ups *UserPluginSetting) Param(key string) string {
 	values, found := ups.Parameters[key]
 	if found {
-		return values[0]
+		return values
 	} else {
 		return ""
 	}
