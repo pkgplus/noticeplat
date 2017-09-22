@@ -256,12 +256,14 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 			continue
 		}
 
-		err = handler(userPlugin)
-		if err != nil {
-			if err != redis.Nil {
-				log.Printf("handle %s err:%v\n", setting_ret.String(), err)
+		if !userPlugin.Disable {
+			err = handler(userPlugin)
+			if err != nil {
+				if err != redis.Nil {
+					log.Printf("handle %s err:%v\n", setting_ret.String(), err)
+				}
+				continue
 			}
-			continue
 		}
 
 		var next_runtime = userPlugin.CronSetting.NextRunTime(time.Unix(curtime, 0))

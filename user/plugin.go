@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/xuebing1110/noticeplat/plugin/cron"
 )
@@ -19,6 +20,8 @@ type UserPluginSetting struct {
 	Parameters map[string][]string `json:"parameters"`
 	Values     []string            `json:"values"`
 	PluginType string              `json:"pluginType"`
+	CreateTime int64               `json:"createTime"`
+	Disable    bool                `json:"disable"`
 }
 
 // type Parameter struct {
@@ -46,6 +49,10 @@ func NewUserPluginSetting(data []byte) (usetting *UserPluginSetting, err error) 
 	err = json.Unmarshal(data, usetting)
 	if err != nil {
 		return nil, err
+	}
+
+	if usetting.CreateTime == 0 {
+		usetting.CreateTime = time.Now().UnixNano()
 	}
 
 	err = usetting.CronSetting.Init()
