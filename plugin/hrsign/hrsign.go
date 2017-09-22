@@ -102,7 +102,7 @@ func (hs *HrSignPlugin) Execute(up *user.UserPlugin) (bool, error) {
 		}
 
 		up.Values = []string{
-			up.Param("name"),
+			hrUid,
 			"微信打卡",
 			location,
 			signTime,
