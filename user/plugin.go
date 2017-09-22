@@ -7,17 +7,18 @@ import (
 )
 
 type UserPlugin struct {
-	UserID   string
-	PluginID string
+	UserID   string `json:"userID"`
+	PluginID string `json:"pluginID"`
 	*UserPluginSetting
 }
 
 type UserPluginSetting struct {
-	CronSetting *cron.CronSetting
+	Desc        string            `json:"desc"`
+	CronSetting *cron.CronSetting `json:"cronSetting"`
 
-	Parameters map[string][]string
-	Values     []string
-	PluginType string
+	Parameters map[string][]string `json:"parameters"`
+	Values     []string            `json:"values"`
+	PluginType string              `json:"pluginType"`
 }
 
 // type Parameter struct {
