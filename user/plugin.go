@@ -60,7 +60,12 @@ func NewUserPluginSetting(data []byte) (usetting *UserPluginSetting, err error) 
 }
 
 func (ups *UserPluginSetting) Param(key string) string {
-	return ups.Parameters[key][0]
+	values, found := ups.Parameters[key]
+	if found {
+		return values[0]
+	} else {
+		return ""
+	}
 }
 
 func (ups *UserPluginSetting) String() string {
