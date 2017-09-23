@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -22,9 +24,12 @@ const (
 	ENERGY_PREFIX      = "energy."
 	USERPLUGINS_PREFIX = "userplugins."
 	TASKS_SORTSET      = "tasks"
+	EXEC_MAXINTERVAL   = 20
+	ASYNC_MAXTASKS     = 1000
 )
 
 var (
+	Random                 = rand.New(rand.NewSource(time.Now().Unix()))
 	SEVEN_DAY              = 168 * time.Hour
 	Client                 *RedisStorage
 	ERROR_USERTASK_EXPIRED = errors.New("taskHasExpired")
@@ -220,6 +225,8 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 		return err
 	}
 
+	var wg sync.WaitGroup
+	var asyncLimit = make(chan bool, ASYNC_MAXTASKS)
 	for _, retZ := range retZs {
 		// log.Printf("get task:%+v", retZ.Member)
 
@@ -256,24 +263,37 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 			continue
 		}
 
-		if !userPlugin.Disable {
-			err = handler(userPlugin)
-			if err != nil {
-				if err != redis.Nil {
-					log.Printf("handle %s err:%v\n", setting_ret.String(), err)
-				}
-				continue
-			}
-		}
+		asyncLimit <- true
+		wg.Add(1)
+		go func(userPlugin *userPlugin) {
+			defer func() {
+				wg.Done()
+				<-asyncLimit
+			}()
 
-		var next_runtime = userPlugin.CronSetting.NextRunTime(time.Unix(curtime, 0))
-		// log.Printf("curtime:%s,next_runtime:%s", time.Unix(curtime, 0).String(), next_runtime.String())
-		rs.ZAdd(TASKS_SORTSET, redis.Z{
-			float64(next_runtime.Unix()),
-			uid_pid_str,
-		})
+			time.Sleep(Random.Int() % EXEC_MAXINTERVAL)
+			log.Printf("deal %s user plugin:%s\n", uid_pid_str, userPlugin.String())
+			if !userPlugin.Disable {
+				err = handler(userPlugin)
+				if err != nil {
+					if err != redis.Nil {
+						log.Printf("handle %s err:%v\n", setting_ret.String(), err)
+					}
+					continue
+				}
+			}
+
+			var next_runtime = userPlugin.CronSetting.NextRunTime(time.Unix(curtime, 0))
+			// log.Printf("curtime:%s,next_runtime:%s", time.Unix(curtime, 0).String(), next_runtime.String())
+			rs.ZAdd(TASKS_SORTSET, redis.Z{
+				float64(next_runtime.Unix()),
+				uid_pid_str,
+			})
+		}(userPlugin)
 
 	}
+
+	wg.Wait()
 
 	return nil
 }
