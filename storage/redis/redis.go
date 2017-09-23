@@ -265,13 +265,13 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 
 		asyncLimit <- true
 		wg.Add(1)
-		go func(userPlugin *userPlugin) {
+		go func(userPlugin *UserPlugin) {
 			defer func() {
 				wg.Done()
 				<-asyncLimit
 			}()
 
-			time.Sleep(Random.Int() % EXEC_MAXINTERVAL)
+			time.Sleep((Random.Int() % EXEC_MAXINTERVAL) * time.Second)
 			log.Printf("deal %s user plugin:%s\n", uid_pid_str, userPlugin.String())
 			if !userPlugin.Disable {
 				err = handler(userPlugin)
