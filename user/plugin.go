@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/xuebing1110/noticeplat/plugin/cron"
@@ -49,6 +50,10 @@ func NewUserPluginSetting(data []byte) (usetting *UserPluginSetting, err error) 
 	err = json.Unmarshal(data, usetting)
 	if err != nil {
 		return nil, err
+	}
+
+	if usetting.CronSetting == nil {
+		return nil, fmt.Errorf("cronSetting parsed failed")
 	}
 
 	if usetting.CreateTime == 0 {

@@ -229,71 +229,74 @@ func (rs *RedisStorage) FetchTasks(curtime int64, handler func(*user.UserPlugin)
 	var asyncLimit = make(chan bool, ASYNC_MAXTASKS)
 	for _, retZ := range retZs {
 		// log.Printf("get task:%+v", retZ.Member)
-
-		uid_pid_str := retZ.Member.(string)
-		uid_pid := strings.SplitN(uid_pid_str, ":", 2)
-		setting_ret := rs.HGet(USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1])
-		if setting_ret.Err() != nil {
-			log.Printf("hget %s %s err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
-			if setting_ret.Err() == redis.Nil {
-				ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
-				log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid, ret2.Err())
-			}
-			continue
-		}
-
-		pluginSetting, err := setting_ret.Result()
-		if err != nil {
-			log.Printf("hget %s %s result err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
-			if setting_ret.Err() == redis.Nil {
-				ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
-				log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid[1], ret2.Err())
-			}
-			continue
-		}
-
-		// log.Printf("pluginSetting:  %s\n", pluginSetting)
-		userPlugin, err := user.NewUserPlugin(uid_pid[0], uid_pid[1], []byte(pluginSetting))
-		if err != nil {
-			log.Printf("parse setting %s err:%s\n", setting_ret.String(), err)
-			if setting_ret.Err() == redis.Nil {
-				ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
-				log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid, ret2.Err())
-			}
-			continue
-		}
-
 		asyncLimit <- true
 		wg.Add(1)
-		go func(userPlugin *UserPlugin) {
+		go func(retZ redis.Z) {
 			defer func() {
 				wg.Done()
 				<-asyncLimit
 			}()
 
-			time.Sleep((Random.Int() % EXEC_MAXINTERVAL) * time.Second)
-			log.Printf("deal %s user plugin:%s\n", uid_pid_str, userPlugin.String())
-			if !userPlugin.Disable {
-				err = handler(userPlugin)
-				if err != nil {
-					if err != redis.Nil {
-						log.Printf("handle %s err:%v\n", setting_ret.String(), err)
-					}
-					continue
-				}
+			err := rs.oneTask(curtime, handler, retZ)
+			if err != nil {
+				log.Printf("handler %s err:%v\n", retZ.Member.(string), err)
 			}
-
-			var next_runtime = userPlugin.CronSetting.NextRunTime(time.Unix(curtime, 0))
-			// log.Printf("curtime:%s,next_runtime:%s", time.Unix(curtime, 0).String(), next_runtime.String())
-			rs.ZAdd(TASKS_SORTSET, redis.Z{
-				float64(next_runtime.Unix()),
-				uid_pid_str,
-			})
-		}(userPlugin)
-
+		}(retZ)
 	}
 
 	wg.Wait()
 
 	return nil
+}
+
+func (rs *RedisStorage) oneTask(curtime int64, handler func(*user.UserPlugin) error, retZ redis.Z) error {
+	uid_pid_str := retZ.Member.(string)
+	uid_pid := strings.SplitN(uid_pid_str, ":", 2)
+	setting_ret := rs.HGet(USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1])
+	if setting_ret.Err() != nil {
+		log.Printf("hget %s %s err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
+		if setting_ret.Err() == redis.Nil {
+			ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
+			log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid, ret2.Err())
+		}
+		return setting_ret.Err()
+	}
+
+	pluginSetting, err := setting_ret.Result()
+	if err != nil {
+		log.Printf("hget %s %s result err:%v\n", USERPLUGINS_PREFIX+uid_pid[0], uid_pid[1], setting_ret.Err())
+		if setting_ret.Err() == redis.Nil {
+			ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
+			log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid[1], ret2.Err())
+		}
+		return err
+	}
+
+	// log.Printf("pluginSetting:  %s\n", pluginSetting)
+	userPlugin, err := user.NewUserPlugin(uid_pid[0], uid_pid[1], []byte(pluginSetting))
+	if err != nil {
+		log.Printf("parse setting %s err:%s\n", setting_ret.Val(), err)
+		if setting_ret.Err() == redis.Nil {
+			ret2 := rs.ZRem(TASKS_SORTSET, uid_pid_str)
+			log.Printf("zrem %s %s, result:%v\n", TASKS_SORTSET, uid_pid, ret2.Err())
+		}
+		return err
+	}
+
+	time.Sleep(time.Duration(Random.Int()%EXEC_MAXINTERVAL) * time.Second)
+	log.Printf("deal %s user plugin:%s\n", uid_pid_str, userPlugin.String())
+	if !userPlugin.Disable {
+		err = handler(userPlugin)
+		if err != nil {
+			return fmt.Errorf("handle %s err:%v\n", setting_ret.Val(), err)
+		}
+	}
+
+	var next_runtime = userPlugin.CronSetting.NextRunTime(time.Unix(curtime, 0))
+	ret2 := rs.ZAdd(TASKS_SORTSET, redis.Z{
+		float64(next_runtime.Unix()),
+		uid_pid_str,
+	})
+
+	return ret2.Err()
 }
