@@ -92,14 +92,9 @@ func (s *CronSetting) getIntervalDuration() (time.Duration, error) {
 }
 
 func (s *CronSetting) NextRunTime(curtime time.Time) (next_run time.Time) {
+	// log.Printf("curtime:%s", curtime.String())
+
 	var duration = s.IntervalDuration
-	if s.WeekLimit == "weekday" {
-		if curtime.Weekday() == time.Sunday {
-			curtime = curtime.Truncate(24 * time.Hour).Add(16*time.Hour - time.Second)
-		} else if curtime.Weekday() == time.Saturday {
-			curtime = curtime.Truncate(24 * time.Hour).Add(40*time.Hour - time.Second)
-		}
-	}
 
 	if s.firstTime.After(curtime) {
 		return s.firstTime
@@ -107,33 +102,50 @@ func (s *CronSetting) NextRunTime(curtime time.Time) (next_run time.Time) {
 
 	// log.Printf("duration:%s", duration.String())
 	// log.Printf("firstTime:%s", s.firstTime.String())
-	// log.Printf("curtime:%s", curtime.String())
+	// log.Printf("curtime2:%s", curtime.String())
 
 	var loopCouont = curtime.Sub(s.firstTime) / duration
 	// log.Printf("loopCouont:%d", loopCouont)
 	next_run = s.firstTime.Add(duration * (loopCouont + 1))
 
-	if len(s.ClockLimitStart) == 5 {
-		if strings.Compare(next_run.Format("15:04"), s.ClockLimitStart) < 0 {
-			hour, _ := strconv.Atoi(s.ClockLimitStart[:2])
-			minute, _ := strconv.Atoi(s.ClockLimitStart[3:5])
-			return s.NextRunTime(time.Date(
-				next_run.Year(), next_run.Month(), next_run.Day(),
+	if len(s.ClockLimitStart) == 5 && strings.Compare(next_run.Format("15:04"), s.ClockLimitStart) < 0 {
+		hour, _ := strconv.Atoi(s.ClockLimitStart[:2])
+		minute, _ := strconv.Atoi(s.ClockLimitStart[3:5])
+
+		next_run = s.NextRunTime(time.Date(
+			next_run.Year(), next_run.Month(), next_run.Day(),
+			hour, minute, next_run.Second(),
+			next_run.Nanosecond(), next_run.Location()).
+			Add(0 - time.Second),
+		)
+		if s.WeekLimit == "weekday" {
+			if next_run.Weekday() == time.Sunday {
+				next_run = next_run.Add(24 * time.Hour)
+			} else if curtime.Weekday() == time.Saturday {
+				next_run = next_run.Add(48 * time.Hour)
+			}
+		}
+		return next_run
+	} else if len(s.ClockLimitEnd) == 5 && strings.Compare(next_run.Format("15:04"), s.ClockLimitEnd) > 0 {
+		hour, _ := strconv.Atoi(s.ClockLimitStart[:2])
+		minute, _ := strconv.Atoi(s.ClockLimitStart[3:5])
+		next_day := next_run.Add(24 * time.Hour)
+		next_run = s.NextRunTime(
+			time.Date(
+				next_day.Year(), next_day.Month(), next_day.Day(),
 				hour, minute, next_run.Second(),
 				next_run.Nanosecond(), next_run.Location()).
 				Add(0 - time.Second),
-			)
+		)
+
+		if s.WeekLimit == "weekday" {
+			if next_run.Weekday() == time.Sunday {
+				next_run = next_run.Add(24 * time.Hour)
+			} else if next_run.Weekday() == time.Saturday {
+				next_run = next_run.Add(48 * time.Hour)
+			}
 		}
-	}
-	if len(s.ClockLimitEnd) == 5 {
-		if strings.Compare(next_run.Format("15:04"), s.ClockLimitEnd) > 0 {
-			return s.NextRunTime(
-				time.Date(
-					next_run.Year(), next_run.Month(), next_run.Day(),
-					23, 59, 59, 0, next_run.Location(),
-				),
-			)
-		}
+		return next_run
 	}
 
 	return
